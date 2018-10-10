@@ -4,12 +4,19 @@ library(dplyr)
 library(Hmisc)
 library(pastecs)
 library(MASS)
+library(carData)
+data("Prestige")
 
 d1<-tbl_df(Prestige)
 sapply(d1,IQR,na.rm=T)
 d2<-d1$income
 quan<-quantile(d2)
+quan1<-quantile(d2,probs = seq(0,1,.05))
+quan1
 quan75<-quan[4]
+quan75b<-quantile(d2,0.75)
+quan75==quan75b
+summary(d2)
 iqr<-IQR(d2)
 #therefore outliers could be defined as 1.5*quan75 or 3*iqr
 1.5*quan75

@@ -13,6 +13,9 @@ library(dplyr)
 library(Hmisc)
 library(pastecs)
 library(MASS)
+library(car)
+library(carData)
+data("Prestige")
 
 
 #THREE TYPES OF CASES
@@ -31,6 +34,8 @@ library(MASS)
 cor(Prestige$income,Prestige$education) #answer: .5775802
 cor.test(Prestige$income,Prestige$education) #low P-value indicates statistical significance
 plot(y=Prestige$income,x=Prestige$education)
+z<-lm(income~education,data = Prestige)
+abline(z,col="blue")
 d1<-tbl_df(Prestige)
 
 
@@ -57,7 +62,7 @@ summary(fit)
 #Case3 - Categorical vrs Categorical
   #Use Chi-Sq 
     #chi^2=Chi-Squared Stat
-    #Oi=number of boservations of type i
+    #Oi=number of observations of type i
     #Ei=the expected Frequency of type i
     #n=number of cells in the table
 
@@ -69,6 +74,7 @@ chisq.test(y=d1$income_cat, x=d1$type)
 
 
 #CHALLENGE: determine which var in Prestige (d1) are stat sig to "income" var
+
   #case1 variables (edu,women,prestige, census)
 eduCor<-cor.test(d1$income,d1$education)
 womenCor<-cor.test(d1$income,d1$women)
@@ -80,9 +86,7 @@ womenCor$p.value
 prestigeCor$p.value
 censusCor$p.value
 
-
   #case2 variable (type)
-
 fit<-aov(income~type,d1)
 summary(fit)
 
