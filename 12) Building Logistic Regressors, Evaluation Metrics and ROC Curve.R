@@ -39,6 +39,11 @@ for (i in 1:9)  {
 d1<-d1b
 d2<-tbl_df(d1)
 
+#This is scaling - NOT NEEDED maybe lm takes care of scaling for you.
+# d22<-d2
+# d22[1:9]<-tbl_df(as.data.frame(scale(d22[1:9])))
+
+
 #turn responce variable into 0 & 1
 d2<-mutate(d2,Class=ifelse(Class=="malignant",1,0))
 d2$Class<-as.factor(d2$Class)
@@ -95,17 +100,20 @@ rr<-regressornames
 
 #use low Pval regressor/predictor names from above 
 #to make a new model (fitbest2) with fewer predictor variables
+#NOTE, FOR lm: using "+" predictor connector instead of "*" connector 
+#gives significantly lower AdjRsq (worse model)
 
 gg<-c()
 hh<-0
 for (i in 1:length(rr)) {
-  hh<-paste("+",rr[i],sep = "")
+  hh<-paste("*",rr[i],sep = "")
   gg<-paste(gg,hh,sep="")
   }
 ggg<-substring(gg,2)
 
-#NOTE following is easier than above for loop and identical
-rrr<-paste(rr,collapse="+")
+#NOTE following is easier than above for loop and identical results
+                    # - note it only works with a list
+rrr<-paste(rr,collapse="*")
 identical(ggg,rrr) #=True
 
 fitbest2<-lm(data = trainb,formula = as.formula(paste("Class~",ggg)))
@@ -114,28 +122,35 @@ aa1$adj.r.squared
 aa1$call
 
 
-# anova(f1,f2,f3,f4) #Note that high pvalue for 4th mod indicates women not needed
+
+car::vif(fitbest) #A Regressor with a VIF = 1 - (not correlated)
+                  #A Regressor VIF = 1 TO 5 - (moderately correlated)
+#High VIF doesn't make a model bad but shows weakness in a single predictor
+#Note that the VIF's for bestfit regressors/predictors range from 6.5 to 107
 
 
-#Challenge use fitbest from above and throw out any term with VIF higher than four 
 
-
-car::vif(fitbest)
-
-
-#Now build model
+  #Now build model per course outline 
+# predictors given no mention of their origin
 fitdown<-glm(Class~Cl.thickness + Cell.size + Cell.shape, family = binomial, data = trainDown)
 #summary(fitdown)
 predDown<-predict(fitdown, newdata= test, type = "response")
 
 #set level for malignant vrs benign at .5
 prednum1<- ifelse(predDown>0.5,1,0)
-y_pred<-as.factor(prednum1)
 
-Accuracy1<-mean(y_pred==as.factor(test$Class))
+#THE TEACHER USED THIS METHOD?
+# y_pred<-as.factor(prednum1)
+# 
+# Accuracy1<-mean(y_pred==as.factor(test$Class))
+
+#I like this method - it is simpler and
+Accuracy1<-mean(ifelse(prednum1==test$Class,1,0))
+
 Accuracy1
 a1<-summary(fitdown)
 a1$aic #lower aic suggest better model
+car::residualPlots(fitdown)
 
 
 
@@ -151,17 +166,49 @@ Accuracy2
 
 a2<-summary(fitup)
 a2$aic  #lower aic suggest better model
+car::residualPlots(fitup)
 
 
-#for fun use bestfit call from above for fitdown
+#for fun use bestfit regressors/predictors (from summary's "call") from above for fitdown
 
-fitdown2<-glm(Class ~ Cell.size + Bare.nuclei + Cl.thickness + 
-                Normal.nucleoli + Bl.cromatin + Mitoses + Cell.shape + Marg.adhesion + 
-                Cell.size:Bare.nuclei + Cell.size:Mitoses + Cell.size:Cell.shape + 
-                Normal.nucleoli:Bl.cromatin + Bare.nuclei:Marg.adhesion + 
-                Cl.thickness:Marg.adhesion + Bare.nuclei:Cl.thickness + Bare.nuclei:Mitoses + 
-                Cl.thickness:Normal.nucleoli + Cell.size:Bare.nuclei:Mitoses + 
+#NOTE, FOR glm: using "+" predictor connector instead of "*" connector 
+#gives significantly higher AIC (better model)
+#FOR lm it is the opposite - therefore "*" is best to use for lm and "+" is best for glm
+
+fitdown2<-glm(Class ~ Cell.size + Bare.nuclei + Cl.thickness +
+                Normal.nucleoli + Bl.cromatin + Mitoses + Cell.shape + Marg.adhesion +
+                Cell.size:Bare.nuclei + Cell.size:Mitoses + Cell.size:Cell.shape +
+                Normal.nucleoli:Bl.cromatin + Bare.nuclei:Marg.adhesion +
+                Cl.thickness:Marg.adhesion + Bare.nuclei:Cl.thickness + Bare.nuclei:Mitoses +
+                Cl.thickness:Normal.nucleoli + Cell.size:Bare.nuclei:Mitoses +
                 Bare.nuclei:Cl.thickness:Marg.adhesion,family = binomial, data = trainDown)
+
+# trainDown2b<-trainDown
+#           trainDown2b$Class<-as.numeric(trainDown2b$Class)
+# fitdown2<-lm(Class ~ Cell.size + Bare.nuclei + Cl.thickness +
+#                 Normal.nucleoli + Bl.cromatin + Mitoses + Cell.shape + Marg.adhesion +
+#                 Cell.size:Bare.nuclei + Cell.size:Mitoses + Cell.size:Cell.shape +
+#                 Normal.nucleoli:Bl.cromatin + Bare.nuclei:Marg.adhesion +
+#                 Cl.thickness:Marg.adhesion + Bare.nuclei:Cl.thickness + Bare.nuclei:Mitoses +
+#                 Cl.thickness:Normal.nucleoli + Cell.size:Bare.nuclei:Mitoses +
+#                 Bare.nuclei:Cl.thickness:Marg.adhesion, data = trainDown2b)
+
+
+# fitdown2<-glm(Class ~ Cell.size*Bare.nuclei*Normal.nucleoli*Bl.cromatin*Mitoses*
+#           Cell.shape*Marg.adhesion*Cell.size:Bare.nuclei*Cell.size:Mitoses*
+#           Cell.size:Cell.shape*Normal.nucleoli:Bl.cromatin*Bare.nuclei:Cl.thickness*
+#           Bare.nuclei:Mitoses*Cell.size:Bare.nuclei:Mitoses*
+#           Bare.nuclei:Cl.thickness:Marg.adhesion,family = binomial, data = trainDown)
+
+
+# fitdown2<-lm(Class ~ Cell.size*Bare.nuclei*Normal.nucleoli*Bl.cromatin*Mitoses*
+#                Cell.shape*Marg.adhesion*Cell.size:Bare.nuclei*Cell.size:Mitoses*
+#                Cell.size:Cell.shape*Normal.nucleoli:Bl.cromatin*Bare.nuclei:Cl.thickness*
+#                Bare.nuclei:Mitoses*Cell.size:Bare.nuclei:Mitoses*
+#                Bare.nuclei:Cl.thickness:Marg.adhesion, data = trainDown2b)
+
+
+
 predDown3<-predict(fitdown2, newdata= test, type = "response")
 
 #set level for malignant vrs benign at .5
@@ -172,7 +219,7 @@ Accuracy3<-mean(y_pred3==as.factor(test$Class))
 Accuracy3
 a3<-summary(fitdown2)
 a3$aic  #lower aic suggest better model
-
+car::residualPlots(fitdown2)
 
 #for fun use bestfit call from above for fitup/GLM
 
@@ -194,8 +241,19 @@ Accuracy4
 
 a4<-summary(fitup2)
 a4$aic  #lower aic suggest better model
+car::residualPlots(fitup2)
 
 
 
 # caret::confusionMatrix(y_pred,as.factor(test$Class),positive="1")
 
+
+#Following code makes a new variable "outlier" based on 
+#if an observation's cook number is less than 4 (1 is outlier) 
+#Note that "trainb" is data.frame used to make fitbest with lm function
+# - note that no outliers were found
+  ag<-cooks.distance(fitbest)
+  trainOutlier<-data.frame()
+    for(i in 1:length(ag)) {
+    trainOutlier<-mutate(trainb, outlier=ifelse(ag[[i]]>4,1,0))
+      }

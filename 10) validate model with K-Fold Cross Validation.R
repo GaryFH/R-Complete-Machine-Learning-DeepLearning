@@ -20,10 +20,10 @@ summary(d1)
 train<-sample_n(d1,.7*nrow(d1))
 test<-setdiff(d1,train)
 
-#Model I DON'T LIKE THIS METHOD
-reg1<-leaps::regsubsets(prestige~.,train)
-par(oma=c(2,0,0,0))
-plot(reg1,scale = "bic")
+# #Model I DON'T LIKE THIS METHOD
+# reg1<-leaps::regsubsets(prestige~.,train)
+# par(oma=c(2,0,0,0))
+# plot(reg1,scale = "bic")
 
 #Stepwise returns the best model (ie lowest AIC) - OK BUT I DON'T LOVE IT
 fitbase<-lm(prestige~1,train)
@@ -34,6 +34,20 @@ fitbest<-step(fitbase, scope = list(lower=fitbase,upper=fitall),
 
 aa<-summary(fitbest)
 aa$adj.r.squared
+
+#Try with "+" instead of "*" in fitall - note AdjRsq and AIC show significantly worst model
+fitbase2<-lm(prestige~1,train)
+fitall2<-lm(prestige~education+income+type+women,train)
+
+fitbest2<-step(fitbase2, scope = list(lower=fitbase2,upper=fitall2),
+              direction = "both",trace=1,steps=1000)
+
+aa<-summary(fitbest2)
+aa$adj.r.squared
+
+
+
+
 
 
 #k-fold cross validation train sample on multiple samples saving the last for a test

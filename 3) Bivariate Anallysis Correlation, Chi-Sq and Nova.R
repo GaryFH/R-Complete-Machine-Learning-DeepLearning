@@ -15,8 +15,10 @@ library(pastecs)
 library(MASS)
 library(car)
 library(carData)
+library(ModelMetrics)
 data("Prestige")
-
+#d is number of digits - ie if d=3 then 1.000
+gh <- function(x, d=3) sprintf(paste0("%1.",d,"f"), x) 
 
 #THREE TYPES OF CASES
   #Case1 - Continous vrs Continuos
@@ -34,9 +36,63 @@ data("Prestige")
 cor(Prestige$income,Prestige$education) #answer: .5775802
 cor.test(Prestige$income,Prestige$education) #low P-value indicates statistical significance
 plot(y=Prestige$income,x=Prestige$education)
-z<-lm(income~education,data = Prestige)
-abline(z,col="blue")
+fit<-lm(income~education,data = Prestige)
+abline(fit,col="blue")
+pred<-predict(fit)
+
 d1<-tbl_df(Prestige)
+d1<-na.omit(d1)
+train<-sample_n(d1,.7*nrow(d1))
+test<-setdiff(d1,train)
+nrow(d1)==(nrow(train)+nrow(test))
+fit1<-lm(income~log(education),train)
+fit1b<-lm(income~education,train)
+fit1all<-lm(income~.,train)
+
+fitbase<-lm(income~1,train)
+fitall<-lm(income~education*prestige*type*women,train)
+
+fitbest<-step(fitbase, scope = list(lower=fitbase,upper=fitall),
+              direction = "both",trace=1,steps=1000)
+
+
+pred1<-predict(fit1,newdata = test)
+test1<-test
+test1<-mutate(test1,Accuracy=ifelse(pred1<1.2*income&pred1>.8*income,1,0))
+Acc1perc20<-mean(na.omit(test1$Accuracy))*100
+aa<-summary(fit1)
+MAE<-gh(mae(test$income,pred1))
+
+paste("MeanAbsoluteError=",MAE,"  ACCURACY(within 20%) = ",gh(Acc1perc20),"%  -  AdjR=",gh(aa$adj.r.squared)," log(education) variable only",sep = "")
+
+
+pred1<-predict(fit1b,newdata = test)
+test1<-test
+test1<-mutate(test1,Accuracy=ifelse(pred1<1.2*income&pred1>.8*income,1,0))
+Acc1bperc20<-mean(na.omit(test1$Accuracy))*100
+aa<-summary(fit1b)
+MAE<-gh(mae(test$income,pred1))
+
+paste("MeanAbsoluteError=",MAE," ACCURACY(within 20%) = ",gh(Acc1bperc20),"%  -  AdjR=",gh(aa$adj.r.squared)," education only variable",sep = "")
+
+pred1<-predict(fit1all,newdata = test)
+test1<-test
+test1<-mutate(test1,Accuracy=ifelse(pred1<1.2*income&pred1>.8*income,1,0))
+Acc1allperc20<-mean(na.omit(test1$Accuracy))*100
+aa<-summary(fit1all)
+MAE<-gh(mae(test$income,pred1))
+
+paste("MeanAbsoluteError=",MAE,"  ACCURACY(within 20%) = ",gh(Acc1allperc20),"%  -  AdjR=",gh(aa$adj.r.squared)," all variables",sep = "")
+
+pred1<-predict(fitbest,newdata = test)
+test1<-test
+test1<-mutate(test1,Accuracy=ifelse(pred1<1.2*income&pred1>.8*income,1,0))
+Acc1bestperc20<-mean(na.omit(test1$Accuracy))*100
+aa<-summary(fitbest)
+MAE<-gh(mae(test$income,pred1))
+
+paste("MeanAbsoluteError=",MAE,"  ACCURACY(within 20%) = ",gh(Acc1bestperc20),"%  -  AdjR=",gh(aa$adj.r.squared)," bestfit variables",sep = "")
+
 
 
 

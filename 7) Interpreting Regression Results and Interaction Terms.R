@@ -8,7 +8,7 @@ library(carData)
 data("Prestige")
 
 library(mice)
-
+d1<-tbl_df(Prestige)
 micemod<-mice(d1)
 d1a<-tbl_df(complete(micemod,2))#uses impute method
 
@@ -38,6 +38,7 @@ summary(fit1)
 tidy(fit1)#tidy from "broom"
 pred1<-as.vector(predict(fit1,newdata = test))
 
+
 #low pValue shows a relationship (rejecting H0) but not the STRENGTH of the relationship
 #link to article http://bit.ly/1OXBLbk
 
@@ -55,7 +56,7 @@ BIC(fit1)
 
 car::vif(fit1)
 
-#NOTE that below trick increases strength of model (higher adjRsquared)
+#NOTE that below trick increases strength of model (higher adjRsquared and lower AIC&BIC)
 # TRICK use an "interaction term" - such as income:education in the model as follows:
 
 fit2<-lm(prestige~income + education + income:education,train)
@@ -63,6 +64,8 @@ summary(fit1)$adj.r.squared
 summary(fit2)$adj.r.squared
 AIC(fit1)
 AIC(fit2)
+BIC(fit1)
+BIC(fit2)
 
 
 # TRICK use an "I" function - such as "I(education^2)" in the model as follows:

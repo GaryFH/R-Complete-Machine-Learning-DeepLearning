@@ -33,7 +33,17 @@ summary(d1)
     
 #test for "Residuals vrs Leverage" Use "cooks distance"
     #points more than 4 times the mean are bad (too influential or extreme)
-    cooks.distance(fit1)
+    
+    
+    #Following code makes a new variable "outlier" based on 
+    #if an observation's cook number is less than 4 (1 is outlier) 
+    ag<-cooks.distance(fit1)
+    trainOutlier<-data.frame()
+    for(i in 1:length(ag)) {
+      trainOutlier<-mutate(train, outlier=ifelse(ag[[i]]>4,1,0))
+      }
+    
+    
     aa<-summary(fit1)
     aa$adj.r.squared
     car::residualPlots(fit1)
@@ -43,7 +53,8 @@ summary(d1)
     
     fit2<-lm(prestige~log(income)+education,train)
     aa<-summary(fit2)
-    aa$adj.r.squared #note that AdjRsqrd has increased - better model fit
+    aa$adj.r.squared #note that AdjRsqrd has increased with fit2 - better model fit
+    AIC(fit2) #NOTE that AIC is lower for fit2 than for fit1 - better model fit
     car::residualPlots(fit2)
     
 #try again with log (default is natural log) of both variables - note that this is worse than fit2
