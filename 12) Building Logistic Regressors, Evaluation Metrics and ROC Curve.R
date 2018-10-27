@@ -26,27 +26,31 @@ d1a<-dd
 #delete ID variable
 d1b<-d1a[,-1]
 d1<-tbl_df(d1b)
+#Convert ord.factor to numeric (first go to character) - not response variable "Class"
+d1[1:5]<-sapply(d1[1:5],as.character)
+d1<-dplyr::mutate(d1,Class=ifelse(Class=="benign",0,1))
+d1<-tbl_df(as.data.frame(sapply(d1,as.numeric)))
+
+
+
+
 #NOTE THIS DOESN'T WORK WITH tbl_df
 #Convert ord.factor to numeric (first go to character) - not response variable "Class"
+# #ONLY WORKS WITH
+# for (i in 1:9)  {
+#   d1b[,i]<-as.numeric(as.character(d1b[,i]))
+#   
+#   
+# }
+#d1<-d1b
 
-#ONLY WORKS WITH
-for (i in 1:9)  {
-  d1b[,i]<-as.numeric(as.character(d1b[,i]))
-  
-  
-}
-
-d1<-d1b
-d2<-tbl_df(d1)
+d2<-d1
 
 #This is scaling - NOT NEEDED maybe lm takes care of scaling for you.
 # d22<-d2
 # d22[1:9]<-tbl_df(as.data.frame(scale(d22[1:9])))
 
 
-#turn responce variable into 0 & 1
-d2<-mutate(d2,Class=ifelse(Class=="malignant",1,0))
-d2$Class<-as.factor(d2$Class)
 
 table(d2$Class)
 
@@ -67,16 +71,17 @@ train<-dplyr::select(train,-id)
 test<-dplyr::select(test,-id)
 
 #now reduce num of 0's to same as num of #1's in the train dataframe (downsampling)
-trainDown<-downSample(x=dplyr::select(train,-Class),y=train$Class)
+#note that downSample & upSample require a factor Responce variable
+trainDown<-downSample(x=dplyr::select(train,-Class),y=as.factor(train$Class))
 summary(trainDown$Class)
-trainUp<-upSample(x=dplyr::select(train,-Class),y=train$Class)
+trainUp<-upSample(x=dplyr::select(train,-Class),y=as.factor(train$Class))
 summary(trainUp$Class)
 
 
 #play with stepwise to find best model
 #Stepwise returns the best model (ie lowest AIC)
 trainb<-train
-trainb$Class<-as.integer(trainb$Class)
+testb<-test
 fitbase<-lm(Class~1,trainb)
 fitall<-lm(Class~ 
  Cl.thickness*Cell.size*Cell.shape*Marg.adhesion*Epith.c.size*Bare.nuclei*Bl.cromatin*Normal.nucleoli*Mitoses ,trainb)
@@ -85,8 +90,65 @@ fitbest<-step(fitbase, scope = list(lower=fitbase,upper=fitall),
               direction = "both",trace=1,steps=1000)
 
 aa<-summary(fitbest)
-aa$adj.r.squared
+AdjRsq_lmAcc<-aa$adj.r.squared
 aa$call
+pred1<-predict(fitbest,newdata = testb)
+pred1<-as.numeric(pred1)
+Acc<-ifelse(pred1<.5,0,1)
+Acc2<-ifelse(Acc==testb$Class,1,0)
+lmAcc<-mean(Acc2)*100
+lmAcc
+
+
+#look for strongest of "fitbest" predictors
+aaa<-tbl_df(as.data.frame(rownames(aa$coefficients)))
+names(aaa)="Predictors"
+bbb<-tbl_df(as.data.frame(aa$coefficients))
+names(bbb)=c("Est","StdErr","Tvalue","pVal")
+qualityPredictors<-tbl_df(cbind(aaa,bbb))
+qualityPredictors<-qualityPredictors[-1,]
+# bestPredictors<-dplyr::filter(qualityPredictors,pVal<.05)
+# bestPredictors<-bestPredictors[-1,]
+
+      gf<-0
+        gf3<-c()
+        gf4<-c()
+        gf2<-0
+        trainb<-train[-10]
+        uu<-intersect(names(trainb),as.character(qualityPredictors$Predictors))
+    for (i in 1:length(uu)) {
+
+      gf<<-as.character(uu[i])
+      
+      gfh2<-data.frame()
+      for (i in 1:length(uu)) {
+      if(gf==uu[i]){gfh2<<-trainb[i]}
+      }
+      pred<-as.numeric(unlist(gfh2))
+      
+ 
+      fit<-lm(Class~pred,train)
+      aa<-summary(fit)
+      gf2<<-gh(aa$adj.r.squared)
+      gf2b<-as.data.frame(aa$coefficients)
+      gf2b<-gf2b[2,4]
+      gf3<<-c(gf,gf2,gf2b)
+      gf4<<-rbind(gf4,gf3)
+      gf4<-tbl_df(gf4)
+      names(gf4)<-c("Predictor","AdjRsq","Pval")
+      gf4<-arrange(gf4,desc(AdjRsq))
+  
+        }
+
+        
+        grid.table(gf4,row=NULL)
+        
+
+
+
+
+
+
 #make dataframe of bestfit predictors to help allow for automatic use of predictors
 
 bb<-summary(fitbest)
@@ -150,7 +212,7 @@ Accuracy1<-mean(ifelse(prednum1==test$Class,1,0))
 Accuracy1
 a1<-summary(fitdown)
 a1$aic #lower aic suggest better model
-car::residualPlots(fitdown)
+#car::residualPlots(fitdown)
 
 
 
@@ -241,6 +303,24 @@ Accuracy4
 
 a4<-summary(fitup2)
 a4$aic  #lower aic suggest better model
+
+#1)glm fitdown; 2)glm fitup; 3)glm "best" fitdown2; 4)glm "best" fitup2;  5)lm best 
+
+
+Accuracy1
+a1$aic
+Accuracy3
+a3$aic
+
+Accuracy2
+a2$aic
+Accuracy4
+a4$aic
+
+AdjRsq_lmAcc
+lmAcc
+
+
 car::residualPlots(fitup2)
 
 
@@ -257,3 +337,17 @@ car::residualPlots(fitup2)
     for(i in 1:length(ag)) {
     trainOutlier<-mutate(trainb, outlier=ifelse(ag[[i]]>4,1,0))
       }
+
+ #1)is fitdown; 2)is fitup; 3)is fitdown2; 4)is fitup2 
+  AdjRsq<-aa$adj.r.squared
+  AccuratePerc1
+  
+  Accuracy1
+  a1$aic
+  Accuracy3
+  a3$aic
+  
+  Accuracy2
+  a2$aic
+  Accuracy4
+  a4$aic
