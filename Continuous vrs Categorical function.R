@@ -81,10 +81,10 @@ ContvrsCateg<- function(data) {
     d1<-d1[-ncol(d1)]
     
 #dependenttrain is identical to train$"dependent variable" - needed inside custom function
-    dependenttrain<-as.numeric(unlist(train[1]))
+    # dependenttrain<-as.numeric(unlist(train[1]))
 
 #dependenttest is identical to test$"dependent variable" - needed inside custom function
-    dependenttest<-as.numeric(unlist(test[1]))
+    # dependenttest<-as.numeric(unlist(test[1]))
 
     
 #make list of all predictor names and make usable in fitall below
@@ -92,7 +92,8 @@ ContvrsCateg<- function(data) {
     b2<-paste(b1,collapse = " * ")
     
 #Create fitbest model with stats::Stepwise Algorithm
-    fitbase<-lm(dependenttrain~1,train)
+    fitbase<-lm(train[[1]]~1,train)
+    #fitbase<-lm(dependenttrain~1,train)
     fitall<-lm(data=train,as.formula(paste(names(train)[1],"~",b2)))
     
 #1) LM - model using fitbest model
@@ -100,18 +101,22 @@ ContvrsCateg<- function(data) {
                   direction = "both",trace=1,steps=1000)
     aa1<-summary(fitbest)
     
-#make object callb from fitbest to make predictor formula for glm
-      callb<-as.list(aa1$call[2])
-      callb<-paste(callb,collapse = "")
+# #make object callb from fitbest to make predictor formula for glm
+#       callb<-as.list(aa1$call[2])
+#       callb<-paste(callb,collapse = "")
       
 #2) GLM - model using fitbest predictors 
-    ifelse(n_distinct(dependenttrain)!=2,
-        fitglm<-glm(data = train, family = gaussian,as.formula(callb)),  
-            fitglm<-glm(data = train, family = binomial,as.formula(callb)))
+    ifelse(n_distinct(train[1])!=2,
+      fitglm<-glm(data = train, family = binomial,aa1$call[[2]]),  
+        fitglm<-glm(data = train, family = binomial,aa1$call[[2]]))
     
 #3) Logistic Regression - model using fitbest predictors
     trainLog<-as.data.frame(train)
     trainLog[,1]<-as.factor(trainLog[[1]])
+   
+    
+    #bbg<-class(trainDown[[ncol(trainDown)]]) 
+    #   !!IMPORTANT NOTE!!!
     #Note trainDown moves dependent variable to last.
     #Also note that "downSample doesn't like tbl_df
     trainDown<-downSample(x=trainLog[,-1],y=trainLog[,1])
@@ -123,14 +128,15 @@ ContvrsCateg<- function(data) {
     #Put indepent variable back at beginning to be compatable with rest of fuction
     trainDown<-trainDown[,a9]
     
-    #dependenttrain is identical to train$"dependent variable" - needed inside custom function
+    #dependenttrain is identical to train$"dependent variable" and to train[[1]]
+    #- needed inside custom function
     #dependenttestDown<-as.numeric(unlist(testDown[1]))
-    dependenttrainDown<-as.numeric(unlist(trainDown[1]))
+    #dependenttrainDown<-as.numeric(unlist(trainDown[1]))
 
 # 
 #     #Create fitbest model with stats::Stepwise Algorithm
 # 
-    fitbase2<-lm(dependenttrainDown~1,trainDown)
+    fitbase2<-lm(trainDown[[1]]~1,trainDown)
     fitall2<-lm(data=trainDown,as.formula(paste(names(trainDown)[1],"~",b2)))
 
     #1) LM - model using fitbest model
@@ -138,13 +144,13 @@ ContvrsCateg<- function(data) {
                   direction = "both",trace=1,steps=1000)
     aa1<-summary(fitbest2)
 
-    #make object callc from fitbest2 to make predictor formula for Logistic
-    callc<-as.list(aa1$call[2])
-    callc<-paste(callc,collapse = "")
+    # #make object callc from fitbest2 to make predictor formula for Logistic
+    # callc<-as.list(aa1$call[2])
+    # callc<-paste(callc,collapse = "")
     
-    ifelse(n_distinct(dependenttrainDown)!=2,
-           fitdown<-glm(data = trainDown, family = gaussian,as.formula(callc)),  
-           fitdown<-glm(data = trainDown, family = binomial,as.formula(callc)))
+    ifelse(n_distinct(trainDown[1])!=2,
+           fitdown<-glm(data = trainDown, family = gaussian,aa1$call[[2]]),  
+           fitdown<-glm(data = trainDown, family = binomial,aa1$call[[2]]))
     
 
     #Random Forest Method      
@@ -168,7 +174,7 @@ ContvrsCateg<- function(data) {
     predRF<-predict(fitRF,newdata=testb[-1])
     AccRF<-ifelse(predRF==testb[,1],1,0)
     paste("Accuracy percentage = ",gh(mean(AccRF)*100),"%",sep="")
-    MAE<-gh(mae(dependenttest,predRF)) #don't think this means much
+    MAE<-gh(mae(test[[1]],predRF)) #don't think this means much
     ErrRate<-tbl_df(as.data.frame(fitRF$err.rate))
     ErrRate$id<-rownames(ErrRate)
     ErrRate<<-ErrRate
@@ -180,19 +186,27 @@ ContvrsCateg<- function(data) {
     
     #Create Naive Bayes model with stats
     trainb<-train
-    trainb[1]<-as.factor(as.numeric(unlist(trainb[1])))
+    trainb[1]<-as.factor(trainb[[1]])
     testb<-test
-    testb[1]<-as.factor(as.numeric(unlist(testb[1])))
+    testb[1]<-as.factor(testb[[1]])
     trainb<-as.data.frame(trainb)
     testb<-as.data.frame(testb)
     
-    dependenttrainNaive<-as.factor(as.numeric(unlist(train[1])))
-    dependenttestNaive<-as.factor(as.numeric(unlist(test[1])))
-    fitBayes<-NaiveBayes(dependenttrainNaive~.,data = trainb)
+#Create object from NaiveBayes for below grid.table    
+    # dependenttrainNaive<-as.factor(as.numeric(unlist(train[1])))
+    # dependenttestNaive<-as.factor(as.numeric(unlist(test[1])))
+    fitBayes<-NaiveBayes(trainb[[1]]~.,data = trainb)
     predBayes<-predict(fitBayes,testb)
-    AccBayes<-mean(ifelse(predBayes$class==dependenttestNaive,1,0))
-    MAE<-gh(mae(dependenttestNaive,predBayes$class)) 
+    AccBayes<-mean(ifelse(predBayes$class==testb[[1]],1,0))
+    MAE<-gh(mae(predBayes$class,testb[[1]])) 
     a6<-c('NaiveBayes',MAE,gh(mean(AccBayes)*100),"NA","NA")
+    
+    
+#DeepLearning h2o
+   
+     
+    
+    
     
 #Create predictions from above models
     predlm<<-predict(fitbest,newdata = test)
@@ -214,10 +228,10 @@ ContvrsCateg<- function(data) {
                 ifelse(predlm<3.5&predlm>=2.5,3,
                 ifelse(predlm<4.5&predlm>=3.5,4,
                 ifelse(predlm<5.5&predlm>=4.5,5,6)))))))
-    Acc1<-ifelse(testlm$Accuracy==dependenttest,1,0)
+    Acc1<-ifelse(testlm$Accuracy==test[[1]],1,0)
     Acc1perc<-mean(na.omit(Acc1))*100
     aa<-summary(fitbest)
-    MAE<-gh(mae(dependenttest,predlm))
+    MAE<-gh(mae(test[[1]],predlm))
     
 #Create objects for below grid.table
     a1<-c('method','MeanAbsolErr','Accuracy','StrengthMethod','StrengthValue')
@@ -232,10 +246,10 @@ ContvrsCateg<- function(data) {
               ifelse(predglm<4.5&predglm>=3.5,4,
               ifelse(predglm<5.5&predglm>=4.5,5,6)))))))
 
-    Acc1<-ifelse(testglm$Accuracy==dependenttest,1,0)
+    Acc1<-ifelse(testglm$Accuracy==test[[1]],1,0)
     Acc1perc<-mean(na.omit(Acc1))*100
     aa<-summary(fitglm)
-    MAE<-gh(mae(dependenttest,predglm))
+    MAE<-gh(mae(test[[1]],predglm))
     #Create object for below grid.table    
     a3<-c('glm',MAE,gh(Acc1perc),"AIC",gh(aa$aic))    
     
@@ -248,10 +262,10 @@ ContvrsCateg<- function(data) {
               ifelse(predLogistic<4.5&predLogistic>=3.5,4,
               ifelse(predLogistic<5.5&predLogistic>=4.5,5,6)))))))
     
-    Acc1<-ifelse(testLogistic$Accuracy==dependenttest,1,0)
+    Acc1<-ifelse(testLogistic$Accuracy==test[[1]],1,0)
     Acc1perc<-mean(na.omit(Acc1))*100
     aa<-summary(fitdown)
-    MAE<-gh(mae(dependenttest,predLogistic))
+    MAE<-gh(mae(test[[1]],predLogistic))
 
   #Create object for below grid.table    
     a4<-c('Logistic',MAE,gh(Acc1perc),"AIC",gh(aa$aic))

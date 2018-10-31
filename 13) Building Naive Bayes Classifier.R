@@ -23,7 +23,7 @@ data("Vehicle")
 d1a<-tbl_df(Vehicle)
 d11<-dplyr::select(d1a,Class,everything())
 d11b<-d11[-1]
-gh <- function(x, d=3) sprintf(paste0("%1.",d,"f"), x) 
+
 
 train<-sample_n(d11,.7*nrow(d11))
 test<-setdiff(d11,train)

@@ -15,6 +15,8 @@ d1<-na.omit(d1)
 sapply(d1,mean)
 sapply(d1,sd)
 summary(d1)
+d1<-na.omit(d1)
+
 
 #Training
 train<-sample_n(d1,.7*nrow(d1))

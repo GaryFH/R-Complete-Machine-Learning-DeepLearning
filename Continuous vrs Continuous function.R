@@ -87,6 +87,7 @@ normalize<-function(x){
 fitbest<-step(fitbase, scope = list(lower=fitbase,upper=fitall),
                 direction = "both",trace=1,steps=1000)
     aa1<-summary(fitbest)
+
     
 #make object callb from fitbest to make bestfit formula for glm use
     callb<-as.list(aa1$call[2])
@@ -97,7 +98,7 @@ fitglm<-glm(data = train, family = gaussian,as.formula(callb)),
           fitglm<-glm(data = train, family = gaussian,as.formula(callb)))
     
 predlm<<-predict(fitbest,newdata = test)
-predglm<<-predict(fitglm,newdata = test)
+predglm<<-predict(fitglm,newdata = test, type = "response")
     
     #lm bestfit stats
     testlm<<-test
@@ -143,11 +144,12 @@ predglm<<-predict(fitglm,newdata = test)
     
     tbl1<<-cbind(ty,byt,ty2)
     #saveRDS(tbl1,file = "tbl1.rds")
+    grid.table(tblstat,row=NULL )
     
     } 
     
     
-    grid.table(tblstat,row=NULL )
+    #grid.table(tblstat,row=NULL )
     
     tbl<-tbl_df(tbl1)
     tbl$id<-as.integer(rownames(tbl))
