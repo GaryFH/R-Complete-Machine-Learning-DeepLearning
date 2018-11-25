@@ -194,11 +194,11 @@ for(i in 1:10) {
 }
 
 
-buall<-c(RFalla,sd(All))
-bubest<-c(RFbesta,sd(Best))
+buall<-c(RFalla,2*sd(All))
+bubest<-c(RFbesta,2*sd(Best))
 bu<-tbl_df(as.data.frame(rbind(buall,bubest)))
 
-names(bu)<-c("Avg_MAE","Avg_Accuracy","SD_of averages")
+names(bu)<-c("Avg_MAE","Avg_Accuracy","Two_sd_of averages")
 
 gf<-tbl_df(cbind(tblstat[1],bu))
 gf2<-mutate(gf,Avg_MAE = Avg_MAE/10,Avg_Accuracy=Avg_Accuracy/10)
