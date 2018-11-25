@@ -50,20 +50,5 @@ d1<-dplyr::select(d1,Class,everything())
       train<-train[-ncol(train)]
       test<-test[-ncol(test)]
       
-      
-      #Create Naive Bayes model with stats
-          trainb<-train
-          trainb[1]<-as.factor(as.numeric(unlist(trainb[1])))
-          testb<-test
-          testb[1]<-as.factor(as.numeric(unlist(testb[1])))
-          trainb<-as.data.frame(trainb)
-          testb<-as.data.frame(testb)
-      
-          dependenttrainNaive<-as.factor(as.numeric(unlist(train[1])))
-          dependenttestNaive<-as.factor(as.numeric(unlist(test[1])))
-          fitBayes<-NaiveBayes(dependenttrainNaive~.,data = trainb)
-          predBayes<-predict(fitBayes,testb)
-          AccBayes<-mean(ifelse(predBayes$class==dependenttestNaive,1,0))
-          AccBayes
 
 

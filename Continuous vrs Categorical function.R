@@ -56,15 +56,31 @@ normalize<-function(x){
   d1<-tbl_df(as.data.frame(d1))
   #put dependent variable first
   d1<-dplyr::select(d1,Class,everything())
-  d2<-tbl_df(scale(d1))
+  #d2<-tbl_df(scale(d1))
 
-    
-    
+  dataset = read.csv('Churn_Modelling.csv')
+  d2<-tbl_df(dataset[4:14])
+  d2<-mutate(d2,Geography=ifelse(Geography=="France",1,
+                                 ifelse(Geography=="Spain",2,3)))
+  d2<-mutate(d2,Gender=ifelse(Gender=="Female",1,2))
+  d2<-dplyr::select(d2,Exited,everything())
+  d2<-d2[complete.cases(d2),]
+  
+  d3<-tbl_df(iris)
+  d3<-dplyr::select(d3,Species,everything())
+  d3<-mutate(d3,Species=ifelse(Species=="setosa",0,
+                               ifelse(Species=="versicolor",.5,1)))
+  d3<-d3[complete.cases(d3),]
+
+  
+ 
+  
+
       
 ContvrsCateg<- function(data) {
     
 #Insure no NA's and all observations are "complete.cases"
-    d1<-na.omit(d1)
+    d1<-na.omit(data)
     d1<-d1[complete.cases(d1),]
     
 #Make all variables NUMERIC VARIABLE
@@ -72,6 +88,10 @@ ContvrsCateg<- function(data) {
     d1$id<-as.integer(rownames(d1))
     
 #Create and test TRAIN & TEST sets
+    # split = sample.split(d1$Purchased, SplitRatio = 0.7)
+    # train<-subset(d1,split==T)
+    # test<-subset(d1,split==F)
+
     train<-sample_n(d1,.7*nrow(d1))
     test<-setdiff(d1,train)
     ag<-nrow(d1)==(nrow(train)+nrow(test))
@@ -79,12 +99,6 @@ ContvrsCateg<- function(data) {
     train<-train[-ncol(train)]
     test<-test[-ncol(test)]
     d1<-d1[-ncol(d1)]
-    
-#dependenttrain is identical to train$"dependent variable" - needed inside custom function
-    # dependenttrain<-as.numeric(unlist(train[1]))
-
-#dependenttest is identical to test$"dependent variable" - needed inside custom function
-    # dependenttest<-as.numeric(unlist(test[1]))
 
     
 #make list of all predictor names and make usable in fitall below
@@ -100,14 +114,11 @@ ContvrsCateg<- function(data) {
     fitbest<-step(fitbase, scope = list(lower=fitbase,upper=fitall),
                   direction = "both",trace=1,steps=1000)
     aa1<-summary(fitbest)
-    
-# #make object callb from fitbest to make predictor formula for glm
-#       callb<-as.list(aa1$call[2])
-#       callb<-paste(callb,collapse = "")
+
       
 #2) GLM - model using fitbest predictors 
     ifelse(n_distinct(train[1])!=2,
-      fitglm<-glm(data = train, family = binomial,aa1$call[[2]]),  
+      fitglm<-glm(data = train, family = poisson,aa1$call[[2]]),  
         fitglm<-glm(data = train, family = binomial,aa1$call[[2]]))
     
 #3) Logistic Regression - model using fitbest predictors
@@ -115,7 +126,6 @@ ContvrsCateg<- function(data) {
     trainLog[,1]<-as.factor(trainLog[[1]])
    
     
-    #bbg<-class(trainDown[[ncol(trainDown)]]) 
     #   !!IMPORTANT NOTE!!!
     #Note trainDown moves dependent variable to last.
     #Also note that "downSample doesn't like tbl_df
@@ -123,19 +133,15 @@ ContvrsCateg<- function(data) {
     trainDown[,ncol(trainDown)]<-as.character(trainDown[[ncol(trainDown)]])
     trainDown[,ncol(trainDown)]<-as.numeric(trainDown[[ncol(trainDown)]])
     trainDown<-tbl_df(trainDown)
-    #Make vector with perferred order of variables
-    a9<-c(ncol(trainDown),c((1:(ncol(trainDown)-1))))
-    #Put indepent variable back at beginning to be compatable with rest of fuction
-    trainDown<-trainDown[,a9]
     
-    #dependenttrain is identical to train$"dependent variable" and to train[[1]]
-    #- needed inside custom function
-    #dependenttestDown<-as.numeric(unlist(testDown[1]))
-    #dependenttrainDown<-as.numeric(unlist(trainDown[1]))
+    #Make vector with perferred order of variables
+    aa9<-c(ncol(trainDown),c((1:(ncol(trainDown)-1))))
+    
+    #Put independent variable back at beginning to be compatable with rest of fuction
+    trainDown<-trainDown[,aa9]
 
-# 
-#     #Create fitbest model with stats::Stepwise Algorithm
-# 
+#Create fitbest model with stats::Stepwise Algorithm
+
     fitbase2<-lm(trainDown[[1]]~1,trainDown)
     fitall2<-lm(data=trainDown,as.formula(paste(names(trainDown)[1],"~",b2)))
 
@@ -144,21 +150,19 @@ ContvrsCateg<- function(data) {
                   direction = "both",trace=1,steps=1000)
     aa1<-summary(fitbest2)
 
-    # #make object callc from fitbest2 to make predictor formula for Logistic
-    # callc<-as.list(aa1$call[2])
-    # callc<-paste(callc,collapse = "")
-    
     ifelse(n_distinct(trainDown[1])!=2,
            fitdown<-glm(data = trainDown, family = gaussian,aa1$call[[2]]),  
            fitdown<-glm(data = trainDown, family = binomial,aa1$call[[2]]))
     
 
-    #Random Forest Method      
+#Random Forest Method      
     # Feature Scaling
     trainb<-as.data.frame(train)
+    trainb<-na.omit(trainb)
     trainb[,1]<-as.factor(trainb[,1])
     trainb[,-1]<-scale(trainb[,-1])
     testb<-as.data.frame(test)
+    testb<-na.omit(testb)
     testb[,1]<-as.factor(testb[,1])
     testb[,-1]<-scale(testb[,-1])
     
@@ -168,11 +172,12 @@ ContvrsCateg<- function(data) {
     library(randomForest)
     fitRF<-randomForest(x=trainb[,-1],
                         y=trainb[,1],
-                        ntree=500)
+                        ntree=200)
 
 #Create RandomForest stats & predicting accuracy%
-    predRF<-predict(fitRF,newdata=testb[-1])
-    AccRF<-ifelse(predRF==testb[,1],1,0)
+    predRF<-predict(fitRF,newdata=testb[,-1])
+    predRF<-as.factor(as.character(predRF))
+    AccRF<-ifelse(as.factor(as.character(predRF))==testb[[1]],1,0)
     paste("Accuracy percentage = ",gh(mean(AccRF)*100),"%",sep="")
     MAE<-gh(mae(test[[1]],predRF)) #don't think this means much
     ErrRate<-tbl_df(as.data.frame(fitRF$err.rate))
@@ -196,22 +201,49 @@ ContvrsCateg<- function(data) {
     # dependenttrainNaive<-as.factor(as.numeric(unlist(train[1])))
     # dependenttestNaive<-as.factor(as.numeric(unlist(test[1])))
     fitBayes<-NaiveBayes(trainb[[1]]~.,data = trainb)
-    predBayes<-predict(fitBayes,testb)
+    predBayes<-predict(fitBayes,testb[-1])
     AccBayes<-mean(ifelse(predBayes$class==testb[[1]],1,0))
     MAE<-gh(mae(predBayes$class,testb[[1]])) 
     a6<-c('NaiveBayes',MAE,gh(mean(AccBayes)*100),"NA","NA")
     
     
-#DeepLearning h2o
+    
+#Create object from KNN for below grid.table 
+    trainbb<-trainb
+    trainbb[-1]<-sapply(trainbb[-1],normalize)
    
-     
+    testbb<-testb
+    testbb[-1]<-sapply(testbb[-1],normalize)
+    
+    predKNN<-class::knn(trainbb[,-1],testbb[,-1],trainbb[,1],k=5)
+    AccKNN<-mean(ifelse(predKNN==testbb[[1]],1,0))
+    a8<-c('KNN',0,gh(mean(AccKNN)*100),"NA","NA")    
     
     
+    
+#DeepLearning h2o
+    trainc<-train
+    trainc[-1]<-scale(trainc[-1])
+    testc<-test
+    testc[-1]<-scale(testc[-1])
+    
+    library(h2o)
+    h2o.init(nthreads = -1)
+
+    modeld2<-h2o.deeplearning(y=names(testc[1]),
+                              training_frame=as.h2o(trainc),
+                              activation="Rectifier",
+                              hidden=c(5,5),
+                              epochs=100,
+                              train_samples_per_iteration =-2)
+ 
     
 #Create predictions from above models
     predlm<<-predict(fitbest,newdata = test)
     predglm<<-predict(fitglm,newdata = test, type = "response")
     predLogistic<<-predict(fitdown,newdata = test, type = "response")
+    predh2o<-h2o.predict(modeld2,newdata= as.h2o(testc[-1]))
+    predh2o<-as.vector(predh2o)
    
 
     
@@ -270,8 +302,32 @@ ContvrsCateg<- function(data) {
   #Create object for below grid.table    
     a4<-c('Logistic',MAE,gh(Acc1perc),"AIC",gh(aa$aic))
     
+    
+#h20 model for stats add "Accuracy" variable to test model
+    testh2o<-testc
+    testh2o<-mutate(testh2o,Accuracy=ifelse(predh2o<.5,0,
+                          ifelse(predh2o<1.5&predh2o>=.5,1,
+                          ifelse(predh2o<2.5&predh2o>=1.5,2,
+                          ifelse(predh2o<3.5&predh2o>=2.5,3,
+                          ifelse(predh2o<4.5&predh2o>=3.5,4,
+                          ifelse(predh2o<5.5&predh2o>=4.5,5,6)))))))
+    
+    Acc1<-ifelse(testh2o$Accuracy==testc[[1]],1,0)
+    Acc1perc<-mean(na.omit(Acc1))*100
+    MAE<-h2o.mae(modeld2)
+    MAE
+    MeanResDev<-h2o.mean_residual_deviance(modeld2)
+    a7<-c("DeepLearn/h2o",gh(MAE),gh(Acc1perc),"MeanResDev",gh(MeanResDev)) 
+    
+    
+    
 #Create gridtable of stats from above methods
-    tblstat<-tbl_df(as.data.frame(rbind(a2,a3,a4,a5,a6)))
+    
+    tr<-as.data.frame(rbind(a2,a3,a4,a5,a6,a7,a8))
+    tr[2:3]<-sapply(tr[2:3],as.character)
+    tr[2:3]<-sapply(tr[2:3],as.numeric)
+    tblstat<-tbl_df(tr)
+
     names(tblstat)<-a1
     tblstat<<-tblstat
     grid.table(tblstat,row=NULL )
@@ -293,7 +349,44 @@ ContvrsCateg<- function(data) {
     tbl1<<-cbind(ty,byt,ty2)
 
     } 
-    
+ 
+
+
+#get average accuracy for 10 runs of various predictive methods
+lma<-c(0,0)
+glma<-c(0,0)
+loga<-c(0,0)
+rfa<-c(0,0)
+nba<-c(0,0)
+dla<-c(0,0)
+knna<-c(0,0)
+for(i in 1:10) {
+  ContvrsCateg(d2)
+  lmavg<-c(tblstat[[1,2]],tblstat[[1,3]])
+  lma<<-(lmavg+lma)
+  glmavg<-c(tblstat[[2,2]],tblstat[[2,3]])
+  glma<<-(glmavg+glma)
+  logavg<-c(tblstat[[3,2]],tblstat[[3,3]])
+  loga<<-(logavg+loga)
+  rfavg<-c(tblstat[[4,2]],tblstat[[4,3]])
+  rfa<<-(rfavg+rfa)
+  nbavg<-c(tblstat[[5,2]],tblstat[[5,3]])
+  nba<<-(nbavg+nba)
+  dlavg<-c(tblstat[[6,2]],tblstat[[6,3]])
+  dla<<-(dlavg+dla)
+  knnavg<-c(tblstat[[7,2]],tblstat[[7,3]])
+  knna<<-(knnavg+knna)
+}
+
+bu<-tbl_df(as.data.frame(rbind(lma,glma,loga,rfa,nba,dla,knna)))
+names(bu)<-c("Avg_MAE","Avg_Accuracy")
+gf<-tbl_df(cbind(tblstat[1],bu))
+gf2<-mutate(gf,Avg_MAE = Avg_MAE/10,Avg_Accuracy=Avg_Accuracy/10)
+
+grid.table(gf2,row=NULL )
+
+
+   
 #Shows comparison stats on all methods used
     #grid.table(tblstat,row=NULL )
     

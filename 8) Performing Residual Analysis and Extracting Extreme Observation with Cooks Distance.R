@@ -22,7 +22,7 @@ summary(d1)
     aa$adj.r.squared
     
     par(mfrow=c(2,2))
-    plot(fit1)
+   plot(fit1)
     
 #test for "Residuals vs Fitted" average values should equal zero
     lmtest::bptest(fit1)

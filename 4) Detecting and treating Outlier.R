@@ -25,7 +25,7 @@ iqr<-IQR(d2)
 #outliers listed/idenified
 d3<-d2[d2>3*iqr]
 d3
-d4<-d2[d2>1.5*quan75]
+d4<-d2[d2>1.5*quan75b]
 d4
 
 #one way of dealing with outliers is to "cap" by replacing all values higher

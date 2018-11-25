@@ -26,7 +26,8 @@ normalize<-function(x){
 }
 
 
-#   KNN NEEDS ALL VARIABLES NUMERIC AND "NORMALIZED" BETWEEN 0 AND 1
+#   KNN NEEDS ALL PREDICTOR VARIABLES NUMERIC AND "NORMALIZED" BETWEEN 0 AND 1
+# - dependent/outcome variable can be factor
 
 
 #   KNN needs to have a distance matrix

@@ -68,14 +68,15 @@ for (i in 1:nrow(test1)) {
 test1$accurate[i]=ifelse((test1$prestige[i]-test1$pred1)<=.06*test1$prestige[i],1,0)
 
 }
-accuracytest1<-(sum(test1$accurate)/nrow(test1))*100
+#accuracytest1<-(sum(test1$accurate)/nrow(test1))*100
+accuracytest1<-mean(test1$accurate)*100
 accuracytest1
 
   #another way to determine accuracy with Mean Squared Error (MSE)
   #and Mean Absolute Percentage Error
 
-MSE<-mean((test$prestige - pred1)^2)
-MAPE<-mean(abs(test$prestige - pred1)/test$prestige)
+MSE<-mean((test$prestige - pred1)^2) # or mse(test$prestige,pred1)
+MAPE<-mean(abs(test$prestige - pred1)/test$prestige) # or
 MSE
 MAPE
 

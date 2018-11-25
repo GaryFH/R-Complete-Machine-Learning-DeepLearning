@@ -80,19 +80,19 @@ ncol(gfhb)
 setdiff(names(gfh),names(gfhb))
 
 
-#impute function part of Hmisc
+#impute function part of Hmisc or e1071
 #Note for continuous use mean for others use mode
 
-d2<-d1
-d2$education<-impute(d2$education,mean)
+d2<-as.data.frame(d1)
+d2[1]<-e1071::impute(d2[1],what="mean")
 summary(d2$education)
 
-d3<-d1
-d3[-6]<-sapply(d1[-6],function(x){impute(x,mean)})
-d4<-tbl_df(as.data.frame(d3))
+d3<-as.data.frame(d1)
+d3[-6]<-sapply(d3[-6],function(x){e1071::impute(d3[-6],what="mean")})
+d4<-as.data.frame(d3)
 summary(d4)
 
-d4$type<-impute(d4$type,mode)
+d4$type<-Hmisc::impute(d4$type,mode)
 summary(d4)
 
 #note that mice funtion does lots of missing value stuff automatically 
@@ -101,8 +101,9 @@ library(mice)
 
 micemod<-mice(d1)
 d5<-tbl_df(complete(micemod,1)) 
+summary(d5)
 d6<-tbl_df(complete(micemod,2))#uses impute method
-
+summary(d6)
 
 #CHALLENGE  impute Cars93_miss
 
@@ -133,7 +134,7 @@ dd5<-tbl_df(complete(micemod2,1))
 # dd6<-tbl_df(complete(micemod3,1)) 
 
 #Trying impute method from above for factor variables
-dd4<-sapply(dd3,function(x){impute(x,mode)})
+dd4<-sapply(dd3,function(x){Hmisc::impute(x,mode)})
 dd4<-tbl_df(as.data.frame(dd4))
 summary(dd4)
 
