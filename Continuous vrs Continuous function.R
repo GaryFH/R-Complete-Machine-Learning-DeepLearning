@@ -54,6 +54,18 @@ normalize<-function(x){
  #  dd<-BreastCancer[complete.cases(BreastCancer),]
  # dd<-tbl_df(dd)
 
+  
+  df<-ggplot2::diamonds
+  df<-df[1:7]
+  df$cut<-as.numeric(df$cut)
+  df$color<-as.numeric(df$color)
+  df$clarity<-as.numeric(df$clarity)
+  df$price<-as.numeric(df$price)
+  df<-dplyr::select(df,price,everything())
+  df<-na.omit(df)
+  df<-df[stats::complete.cases(df),]
+  
+  
 
   
   ContvrsCont<- function(data,ErrLimit) {

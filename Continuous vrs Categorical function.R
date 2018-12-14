@@ -73,6 +73,28 @@ normalize<-function(x){
   d3<-d3[complete.cases(d3),]
 
   
+  # #Correlation coding stuff - all variable need to be numerical
+  # 
+  # 
+  df<-tbl_df(mtcars)
+  # tt2<-data.frame()[1:(ncol(df)-1),]
+  # 
+  # for (i in 1:ncol(df))  {
+  # 
+  #   tt<-as.data.frame(cor(df[-i],df[i]))
+  #   tt[paste("Var",i,sep="")]<-rownames(tt)
+  #   tt[1]<-as.data.frame(apply(tt[1],2,gh))
+  #   tt[1]<-as.numeric(as.character(tt[[1]]))
+  #   tt[2]<-as.factor(as.character(tt[[2]]))
+  #   tt[1]<-sort(abs(tt[[1]]),decreasing = TRUE)
+  #   tt<<-tt
+  #   tt2<<-cbind(tt2,tt)
+  # }
+  # gfh<-tbl_df(tt2)
+  # 
+  # grid.table(gfh,row=NULL)
+  
+  
  
   
 

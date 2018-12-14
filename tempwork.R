@@ -42,13 +42,35 @@ d1<-dplyr::select(d1,Class,everything())
       
 
 #Make test and training sets
-      d1a<-d1
-      d1a$id<-rownames(d1a)
-      train<-sample_n(d1a,.7*nrow(d1a))
-      test<-setdiff(d1a,train)
-      try(if(nrow(d1a)!=nrow(train)+nrow(test)) warning("test/train dim issues"))
-      train<-train[-ncol(train)]
-      test<-test[-ncol(test)]
+      # d1a<-d1
+      # d1a$id<-rownames(d1a)
+      # train<-sample_n(d1a,.7*nrow(d1a))
+      # test<-setdiff(d1a,train)
+      # try(if(nrow(d1a)!=nrow(train)+nrow(test)) warning("test/train dim issues"))
+      # train<-train[-ncol(train)]
+      # test<-test[-ncol(test)]
+      
+      
+#Correlation coding stuff
+    
+    
+    df<-tbl_df(mtcars)
+    tt2<-data.frame()[1:(ncol(df)-1),]
+    
+    for (i in 1:ncol(df))  {
+
+    tt<-as.data.frame(cor(df[-i],df[i]))
+    tt[paste("Var",i,sep="")]<-rownames(tt)
+    tt[1]<-as.data.frame(apply(tt[1],2,gh))
+    tt[1]<-as.numeric(as.character(tt[[1]]))
+    tt[2]<-as.factor(as.character(tt[[2]]))
+    tt[1]<-sort(abs(tt[[1]]),decreasing = TRUE)
+    tt<<-tt
+    tt2<<-cbind(tt2,tt)
+    }
+gfh<-tbl_df(tt2)
+
+grid.table(gfh,row=NULL)
       
 
 

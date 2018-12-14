@@ -21,6 +21,7 @@ library(ModelMetrics)
 library(gridExtra)
 library(ggplot2)
 library(randomForest)
+library(Boruta)
 
 #library(BBmisc) #contains normalize function - didn't work below?
     gh <- function(x, d=3) sprintf(paste0("%1.",d,"f"), x) 
@@ -28,13 +29,84 @@ library(randomForest)
       return((x-min(x))/(max(x)-min(x)))
     }
     
-    d2<-tbl_df(TH.data::GlaucomaM)
-    d2<-dplyr::select(d2,Class,everything())
-    d1a<-na.omit(d2)
+    d2aa<-tbl_df(TH.data::GlaucomaM)
+    d2aa<-dplyr::select(d2aa,Class,everything())
+    d1a<-na.omit(d2aa)
   
     
-      
+    data("BreastCancer")
+    d1b<-tbl_df(BreastCancer)
+    d1b<-na.omit(d1b)
+    d1b<-d1b[complete.cases(d1b),]
+    d1b<-d1b[-1] #Remove not needed id variable
+    d1b<-mutate(d1b,Class=ifelse(Class=="benign",0,1))
+    #Change "ord" class variables to character in preporation for changing to numeric
+    d1b[1:5]<-as.data.frame(sapply(d1b[1:5],as.character))
+    #Change all variables to numeric
+    d1b<-sapply(d1b,as.numeric)
+    d1b<-tbl_df(as.data.frame(d1b))
+    #put dependent variable first
+    d1b<-dplyr::select(d1b,Class,everything())
+    #d2<-tbl_df(scale(d1))
+    d1b[[1]] <-as.factor(d1b[[1]])
     
+    dataset = read.csv('Churn_Modelling.csv')
+    d2a<-tbl_df(dataset[4:14])
+    d2a<-mutate(d2a,Geography=ifelse(Geography=="France",1,
+                                   ifelse(Geography=="Spain",2,3)))
+    d2a<-mutate(d2a,Gender=ifelse(Gender=="Female",1,2))
+    d2a<-dplyr::select(d2a,Exited,everything())
+    d2a<-d2a[complete.cases(d2a),]
+    d2a[[1]] <-as.factor(d2a[[1]])
+    
+    d3a<-tbl_df(iris)
+    d3a<-dplyr::select(d3a,Species,everything())
+    d3a<-mutate(d3a,Species=ifelse(Species=="setosa",0,
+                                 ifelse(Species=="versicolor",.5,1)))
+    d3a<-d3a[complete.cases(d3a),]
+    d3a[[1]]<-as.factor(d3a[[1]])
+    
+ 
+# library(doMC)
+#     registerDoMC(cores=4)
+#     
+    #all variables to be checked for correleation must be numeric
+    #example 
+    df<-d1a[-1] #all variables to be checked for correleation must be numeric
+
+    NumCorRelated<-findCorrelation(cor(df),cutoff = .9)
+    if (length(NumCorRelated)!=0) {
+      df2<-df[,-NumCorRelated]
+    }
+
+    NamesCorrelated<-names(df[NumCorRelated])
+    
+    
+    
+    
+    #Correlation coding stuff
+    
+    
+    df<-tbl_df(mtcars)
+    tt2<-data.frame()[1:(ncol(df)-1),]
+
+    for (i in 1:ncol(df))  {
+
+      tt<-as.data.frame(cor(df[-i],df[i]))
+      tt[paste("Var",i,sep="")]<-rownames(tt)
+      tt[1]<-as.data.frame(apply(tt[1],2,gh))
+      tt[1]<-as.numeric(as.character(tt[[1]]))
+      tt[2]<-as.factor(as.character(tt[[2]]))
+      tt[1]<-sort(abs(tt[[1]]),decreasing = TRUE)
+      tt<<-tt
+      tt2<<-cbind(tt2,tt)
+    }
+    gfh<-tbl_df(tt2)
+
+    grid.table(gfh,row=NULL)
+
+
+  
 Borutatest<- function(data) {
       
   d1<-data  
@@ -43,10 +115,10 @@ Borutatest<- function(data) {
   test<-as.data.frame(setdiff(d1,train))
 
 #Baruta
-    library(Boruta)
+    # library(Boruta)
     
-    baFit<-Boruta(Class~.,train,doTrace=2)
-    # baFit
+    # baFit<-Boruta(Class~.,train,doTrace=2)
+    baFit<-Boruta(data=train,as.formula(paste(names(train)[1],"~.")),doTrace=2)
     #plot(baFit,cex.axis=.7,las=2)
     baSignif<-getSelectedAttributes(baFit,withTentative = TRUE)
     # print(baSignif)
@@ -79,9 +151,9 @@ Borutatest<- function(data) {
     # head(importScores,10)
     
     tf<-unique(gfbb$Names)
-    tfb<-c("Class",tf)
+    tfb<-c(names(d1[1]),tf)
     tff<-dput(tfb)
-    d3<-subset(d2,select=tff)
+    d3<-subset(d1,select=tff)
     # dim(d3)
     # names(d3)
  
@@ -169,6 +241,20 @@ Borutatest<- function(data) {
     print("Not Important variables")
     print(setdiff(names(d1),names(d3)))
 
+    # a1<-as.data.frame(names(d1[-1]))
+    # names(a1)<-"Names"
+    # a1$Variables<-"AllVariables"
+    # 
+    # a2<-as.data.frame(names(d3[-1]))
+    # names(a2)<-"Names"
+    # a2$Variables<-"Important"
+    # 
+    # a3<-as.data.frame(setdiff(names(d1),names(d3)))
+    # names(a3)<-"Names"
+    # a3$Variables<-"NotImportant"
+    
+    
+    
     
     
 }  
@@ -182,7 +268,7 @@ Best<-c()
 RFalla<-c(0,0)
 RFbesta<-c(0,0)
 for(i in 1:10) {
-  Borutatest(d1a)
+  Borutatest(d1b)
   RFallavg<-c(tblstat[[1,2]],tblstat[[1,3]])
   RFalla<<-(RFallavg+RFalla)
   Alla<-tblstat[[1,3]]
