@@ -22,6 +22,7 @@ library(gridExtra)
 library(ggplot2)
 library(randomForest)
 library(Boruta)
+library(tidyr)
 
 #library(BBmisc) #contains normalize function - didn't work below?
     gh <- function(x, d=3) sprintf(paste0("%1.",d,"f"), x) 
@@ -31,7 +32,9 @@ library(Boruta)
     
     d2aa<-tbl_df(TH.data::GlaucomaM)
     d2aa<-dplyr::select(d2aa,Class,everything())
-    d1a<-na.omit(d2aa)
+    # d1a<-na.omit(d2aa) or
+    d1a<-tidyr::drop_na(d2aa)
+    d1a<-d1a[complete.cases(d1a),]
   
     
     data("BreastCancer")
@@ -268,7 +271,7 @@ Best<-c()
 RFalla<-c(0,0)
 RFbesta<-c(0,0)
 for(i in 1:10) {
-  Borutatest(d1b)
+  Borutatest(d1a)
   RFallavg<-c(tblstat[[1,2]],tblstat[[1,3]])
   RFalla<<-(RFallavg+RFalla)
   Alla<-tblstat[[1,3]]

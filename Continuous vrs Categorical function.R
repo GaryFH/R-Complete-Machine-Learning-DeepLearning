@@ -76,7 +76,7 @@ normalize<-function(x){
   # #Correlation coding stuff - all variable need to be numerical
   # 
   # 
-  df<-tbl_df(mtcars)
+  #df<-tbl_df(mtcars)
   # tt2<-data.frame()[1:(ncol(df)-1),]
   # 
   # for (i in 1:ncol(df))  {
@@ -422,8 +422,9 @@ grid.table(gf2,row=NULL )
 #Makes plot showing actual vrs predicted values for bestfit/lm
     tblPred<-tbl[-2:-3]
     names(tblPred)<-c("Value","id")
-    tblAct<-tbl[2:4]
-    tblAct<-tblAct[-2]
+    # tblAct<-tbl[2:4]
+    # tblAct<-tblAct[-2]
+    tblAct<-tbl[c(2,4)]
     names(tblAct)<-c("Value","id")
     
     p1<-ggplot()+
@@ -441,10 +442,10 @@ grid.table(gf2,row=NULL )
     ErrRate$id<-as.numeric(ErrRate$id)
     names(ErrRate)<-c("OOB","zero","one","id")
     
-    p2<-ggplot()+
+    p3<-ggplot()+
       geom_point(data=ErrRate,aes(y=one,x=id),color="dark green",size=3,alpha=.6)
     
-    p2
+    p3
     
     
     
